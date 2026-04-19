@@ -98,11 +98,32 @@ site-analytics/
 
 ## 🚢 部署到生产环境
 
-### 方案1: Vercel（推荐）
+###### 方案1: Vercel（推荐）
+
+#### ⚠️ Vercel 部署注意事项
+
+由于我们使用文件系统存储数据（`data/` 目录），在 Vercel 上部署时有一些限制：
+
+- Vercel Serverless Functions 有临时文件系统，重启后数据会丢失
+- 如果需要持久化存储，建议使用外部数据库（如 Supabase、PlanetScale、MongoDB 等）
+
+#### 部署步骤
 
 1. 将代码推送到 GitHub/GitLab
 2. 在 Vercel 中导入项目
-3. 直接部署！
+3. **重要**：在 Vercel 项目设置中配置：
+   - Framework Preset: `Next.js`
+   - Root Directory: `./` (默认)
+   - Build Command: `npm run build`
+   - Output Directory: `.next` (自动检测)
+4. 点击 "Deploy"！
+
+#### 配置文件说明
+
+项目已包含完整的 Vercel 配置：
+- `vercel.json` - Vercel 部署配置
+- `public/` - 静态资源目录
+- `.gitignore` - Git 忽略配置
 
 ### 方案2: Docker
 
