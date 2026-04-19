@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Track API Error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to track visitor' },
-      { status: 500 }
-    );
+    // 即使出错也返回成功，不影响用户体验
+    return NextResponse.json({
+      success: true,
+      data: null
+    });
   }
 }

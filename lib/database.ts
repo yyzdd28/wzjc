@@ -5,26 +5,40 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
 const STATS_FILE = path.join(DATA_DIR, 'stats.json');
 
-// 初始化数据目录
+// 内存存储（作为 Vercel 环境的后备方案）
+let memoryVisitors: any[] = [];
+let memoryStats: any = {
+  totalVisits: 0,
+  uniqueVisitors: 0,
+  totalClicks: 0,
+  pageViews: {},
+  performanceScore: 85,
+  lastUpdated: new Date().toISOString()
+};
+
+// 检查是否在 Vercel 环境中
+const isVercel = process.env.VERCEL === '1' || process.env.NEXT_PUBLIC_VERCEL === '1';
+
+// 安全地初始化数据目录（仅在本地环境）
 function initDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (isVercel) {
+    return; // 在 Vercel 中跳过文件系统初始化
   }
   
-  if (!fs.existsSync(VISITORS_FILE)) {
-    fs.writeFileSync(VISITORS_FILE, JSON.stringify([], null, 2));
-  }
-  
-  if (!fs.existsSync(STATS_FILE)) {
-    const initialStats = {
-      totalVisits: 0,
-      uniqueVisitors: 0,
-      totalClicks: 0,
-      pageViews: {},
-      performanceScore: 85,
-      lastUpdated: new Date().toISOString()
-    };
-    fs.writeFileSync(STATS_FILE, JSON.stringify(initialStats, null, 2));
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    
+    if (!fs.existsSync(VISITORS_FILE)) {
+      fs.writeFileSync(VISITORS_FILE, JSON.stringify([], null, 2));
+    }
+    
+    if (!fs.existsSync(STATS_FILE)) {
+      fs.writeFileSync(STATS_FILE, JSON.stringify(memoryStats, null, 2));
+    }
+  } catch (e) {
+    console.warn('File system initialization failed, using memory storage:', e);
   }
 }
 
@@ -62,10 +76,13 @@ export interface StatsData {
 export const VisitorDB = {
   getAll(): VisitorData[] {
     try {
+      if (isVercel) {
+        return memoryVisitors;
+      }
       const data = fs.readFileSync(VISITORS_FILE, 'utf8');
       return JSON.parse(data);
-    } catch {
-      return [];
+    } catch (e) {
+      return memoryVisitors;
     }
   },
 
@@ -77,7 +94,15 @@ export const VisitorDB = {
       visitors.pop();
     }
     
-    fs.writeFileSync(VISITORS_FILE, JSON.stringify(visitors, null, 2));
+    if (!isVercel) {
+      try {
+        fs.writeFileSync(VISITORS_FILE, JSON.stringify(visitors, null, 2));
+      } catch (e) {
+        console.warn('Failed to write visitors file:', e);
+      }
+    }
+    
+    memoryVisitors = visitors;
     return visitor;
   },
 
@@ -95,17 +120,13 @@ export const VisitorDB = {
 export const StatsDB = {
   get(): StatsData {
     try {
+      if (isVercel) {
+        return memoryStats;
+      }
       const data = fs.readFileSync(STATS_FILE, 'utf8');
       return JSON.parse(data);
-    } catch {
-      return {
-        totalVisits: 0,
-        uniqueVisitors: 0,
-        totalClicks: 0,
-        pageViews: {},
-        performanceScore: 85,
-        lastUpdated: new Date().toISOString()
-      };
+    } catch (e) {
+      return memoryStats;
     }
   },
 
@@ -116,7 +137,16 @@ export const StatsDB = {
       ...updates,
       lastUpdated: new Date().toISOString()
     };
-    fs.writeFileSync(STATS_FILE, JSON.stringify(newStats, null, 2));
+    
+    if (!isVercel) {
+      try {
+        fs.writeFileSync(STATS_FILE, JSON.stringify(newStats, null, 2));
+      } catch (e) {
+        console.warn('Failed to write stats file:', e);
+      }
+    }
+    
+    memoryStats = newStats;
     return newStats;
   },
 
