@@ -1,0 +1,7 @@
+{
+  "name": "CYBER_ANALYTICS",
+  "short_name": "CA",
+  "theme_color": "#00ff41",
+  "background_color": "#0a0a0f",
+  "display": "standalone"
+}
